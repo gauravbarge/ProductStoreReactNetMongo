@@ -1,0 +1,12 @@
+replicaCount: 1
+image:
+  repository: webapi
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: LoadBalancer
+  port: ${WEBAPI_HOST_PORT}
+  targetPort: ${WEBAPI_CONTAINER_PORT}
+env:
+  ASPNETCORE_ENVIRONMENT: "Development"
+  ConnectionStrings__Mongo: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@host.docker.internal:${MONGO_PORT}/admin?authSource=admin"

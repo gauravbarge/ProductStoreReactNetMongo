@@ -1,0 +1,11 @@
+replicaCount: 1
+image:
+  repository: webapp
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: LoadBalancer
+  port: ${WEBAPP_HOST_PORT}
+  targetPort: 80
+env:
+  VITE_API_URL: "${VITE_API_URL}"

@@ -1,46 +1,76 @@
 version: '3'
 
-env:
-  ENV_FILE: infra/Taskfile.env
-
 vars:
-  INFRA_COMPOSE: infra/docker-compose.infra.yml
-  APP_COMPOSE: deploy/compose/docker-compose.app.yml
-  HELM_CHART: k8s/helm/webapi-chart
+  ENV_FILE: 'infra/Taskfile.env'
+  APP_COMPOSE: 'deploy/compose/docker-compose.app.yml'
+  INFRA_COMPOSE: 'deploy/compose/docker-compose.infra.yml'
+  API_TEMPLATE: 'k8s/helm/webapi-chart/values.template.yaml'
+  WEB_TEMPLATE: 'k8s/helm/webapp-chart/values.template.yaml'
+
+env:
+  # Loads the .env file globally so {{.VAR}} works everywhere
+  DOTENV_VAR: 
+    sh: cat {{.ENV_FILE}}
 
 tasks:
-  # Task to setup infrastructure
+  # --- MODE 1: LOCAL (Dotnet & NPM) ---
+  run:local:
+    desc: "Run full stack locally (Requires 3 terminals or backgrounding)"
+    cmds:
+      - echo "Starting Local Stack..."
+      - task: run:local:api & task:run:local:web
+
+  run:local:api:
+    dir: src/webapi
+    cmds:
+      - dotnet run --urls "http://localhost:{{.WEBAPI_HOST_PORT}}"
+    env:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Mongo: "mongodb://{{.MONGO_USER}}:{{.MONGO_PASSWORD}}@{{.MONGO_HOST_LOCAL}}:{{.MONGO_PORT}}/admin?authSource=admin"
+
+  run:local:web:
+    dir: src/WebApp
+    cmds:
+      - npm install
+      - npm run dev -- --port {{.WEBAPP_HOST_PORT}}
+    env:
+      VITE_API_URL: "{{.VITE_API_URL}}"
+
+  # --- MODE 2: DOCKER ---
+  run:docker:
+    desc: "Run full stack in Docker"
+    cmds:
+      - docker compose -f {{.APP_COMPOSE}} --env-file {{.ENV_FILE}} up -d --build
+
+  # --- MODE 3: K8S (The Full Long Path) ---
+  gen:k8s-values:
+    desc: "Generate K8s values.dev.yaml from Taskfile.env"
+    cmds:
+      # Inject env vars into templates using envsubst
+      - set -a; source {{.ENV_FILE}}; set +a; envsubst < {{.API_TEMPLATE}} > k8s/helm/webapi-chart/values.dev.yaml
+      - set -a; source {{.ENV_FILE}}; set +a; envsubst < {{.WEB_TEMPLATE}} > k8s/helm/webapp-chart/values.dev.yaml
+
+  run:k8s:
+    desc: "Initialize and Deploy Full Stack to K8s"
+    deps: [gen:k8s-values]
+    cmds:
+      # 1. Build images for the cluster
+      - docker build -t webapi:latest -f src/webapi/Dockerfile src/
+      - docker build -t webapp:latest -f src/WebApp/Dockerfile src/WebApp/
+      
+      # 2. Deploy Charts using the generated files
+      - helm upgrade --install webapi-dev ./k8s/helm/webapi-chart -f ./k8s/helm/webapi-chart/values.dev.yaml
+      - helm upgrade --install webapp-dev ./k8s/helm/webapp-chart -f ./k8s/helm/webapp-chart/values.dev.yaml
+
+  # --- INFRA & UTILS ---
   infra:up:
-    desc: "Start the infrastructure (MongoDB, etc.) with credentials"
-    summary: |
-      Loads credentials from Taskfile.env and spins up the 
-      infrastructure containers in detached mode.
+    desc: "Start Infrastructure (MongoDB)"
     cmds:
-      # We explicitly pass the env file to docker-compose
       - docker compose -f {{.INFRA_COMPOSE}} --env-file {{.ENV_FILE}} up -d
-    status:
-      - docker inspect -f '{{.State.Running}}' mongodb-dev
 
-  infra:down:
-    desc: "Stop and remove infrastructure containers"
+  stop:all:
+    desc: "Teardown all environments"
     cmds:
-      - docker compose -f {{.INFRA_COMPOSE}} down
-
-  infra:logs:
-    desc: "View logs for infrastructure"
-    cmds:
-      - docker compose -f {{.INFRA_COMPOSE}} logs -f
-
-  dev:quick:
-    desc: "Quick start webapi (Docker Compose)"
-    cmds:
-      - task: infra:up
-      - docker compose -f {{.APP_COMPOSE}} up -d --build
-
-  dev:k8s:
-    desc: "High-fidelity start webapi (Helm)"
-    cmds:
-      - task: infra:up
-      - helm upgrade --install webapi {{.HELM_CHART}} \
-          --values {{.HELM_CHART}}/values.dev.yaml \
-          --set image.tag=latest
+      - docker compose -f {{.APP_COMPOSE}} down
+      - helm uninstall webapi-dev || true
+      - helm uninstall webapp-dev || true
