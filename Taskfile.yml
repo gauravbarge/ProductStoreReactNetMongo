@@ -3,7 +3,7 @@ version: '3'
 vars:
   ENV_FILE: 'infra/Taskfile.env'
   APP_COMPOSE: 'deploy/compose/docker-compose.app.yml'
-  INFRA_COMPOSE: 'deploy/compose/docker-compose.infra.yml'
+  INFRA_COMPOSE: 'infra/docker-compose.infra.yml'
   API_TEMPLATE: 'k8s/helm/webapi-chart/values.template.yaml'
   WEB_TEMPLATE: 'k8s/helm/webapp-chart/values.template.yaml'
 
