@@ -1,0 +1,46 @@
+version: '3'
+
+env:
+  ENV_FILE: infra/Taskfile.env
+
+vars:
+  INFRA_COMPOSE: infra/docker-compose.infra.yml
+  APP_COMPOSE: deploy/compose/docker-compose.app.yml
+  HELM_CHART: k8s/helm/webapi-chart
+
+tasks:
+  # Task to setup infrastructure
+  infra:up:
+    desc: "Start the infrastructure (MongoDB, etc.) with credentials"
+    summary: |
+      Loads credentials from Taskfile.env and spins up the 
+      infrastructure containers in detached mode.
+    cmds:
+      # We explicitly pass the env file to docker-compose
+      - docker compose -f {{.INFRA_COMPOSE}} --env-file {{.ENV_FILE}} up -d
+    status:
+      - docker inspect -f '{{.State.Running}}' mongodb-dev
+
+  infra:down:
+    desc: "Stop and remove infrastructure containers"
+    cmds:
+      - docker compose -f {{.INFRA_COMPOSE}} down
+
+  infra:logs:
+    desc: "View logs for infrastructure"
+    cmds:
+      - docker compose -f {{.INFRA_COMPOSE}} logs -f
+
+  dev:quick:
+    desc: "Quick start webapi (Docker Compose)"
+    cmds:
+      - task: infra:up
+      - docker compose -f {{.APP_COMPOSE}} up -d --build
+
+  dev:k8s:
+    desc: "High-fidelity start webapi (Helm)"
+    cmds:
+      - task: infra:up
+      - helm upgrade --install webapi {{.HELM_CHART}} \
+          --values {{.HELM_CHART}}/values.dev.yaml \
+          --set image.tag=latest

@@ -1,0 +1,32 @@
+services:
+  webapi:
+    build:
+      context: ../../src/webapi
+      dockerfile: Dockerfile
+    container_name: webapi-app
+    ports:
+      - "${WEBAPI_HOST_PORT}:${WEBAPI_CONTAINER_PORT}"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Connection string built from individual credential variables
+      - ConnectionStrings__Mongo=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/admin?authSource=admin
+      - ASPNETCORE_URLS=http://+:${WEBAPI_CONTAINER_PORT}
+    networks:
+      - infra_default
+
+  webapp:
+    build:
+      context: ../../src/WebApp
+      dockerfile: Dockerfile
+    container_name: webapp-app
+    ports:
+      - "80:80"
+    environment:
+      # Injected from VITE_API_URL in Taskfile.env
+      - VITE_API_URL=${VITE_API_URL}
+    depends_on:
+      - webapi
+
+networks:
+  infra_default:
+    external: true
