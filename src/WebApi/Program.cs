@@ -1,3 +1,5 @@
+
+using Swashbuckle.AspNetCore.SwaggerUI;
 // src/webapi/Program.cs
 var builder = WebApplication.CreateBuilder(args);
 

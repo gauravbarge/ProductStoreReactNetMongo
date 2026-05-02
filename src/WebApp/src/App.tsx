@@ -15,7 +15,7 @@ function App() {
 
   return (
     <div style={{ padding: '2rem', backgroundColor: '#282c34', color: 'white', minHeight: '100vh' }}>
-      <h1>React -> .NET 10 WebAPI</h1>
+      <h1>React .NET 10 WebAPI</h1>
       <p>Targeting: <code>{API_BASE_URL}</code></p>
       {data ? <pre>{JSON.stringify(data, null, 2)}</pre> : <p>Loading data from API...</p>}
     </div>
