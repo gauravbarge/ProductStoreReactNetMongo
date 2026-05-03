@@ -1,23 +1,22 @@
 import { useState, useEffect } from 'react';
 
 function Home() {
-  const [message, setMessage] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const [weather, setWeather] = useState<any>(null);
 
   useEffect(() => {
-    // Calling the function on mount
-    getUserToken();
+    fetch(`${API_BASE_URL}/weatherforecast`)
+      .then(res => res.json())
+      .then(json => setWeather(json))
+      .catch(err => console.error("Weather API call failed:", err));
   }, []);
 
-  const getUserToken = () => {
-    const token = localStorage.getItem('token');
-    // Basic check: if token exists, set it; otherwise, set a fallback
-    setMessage(token || "No token found. Please login.");
-  };
-
   return (
-    <div>
+    <div style={{ padding: '2rem', backgroundColor: '#282c34', color: 'white', minHeight: '100vh' }}>
       <h1>Home Page</h1>
-      <p>Token: {message}</p>
+      <p>Targeting: <code>{API_BASE_URL}</code></p>
+      <h2>Weather Forecast</h2>
+      {weather ? <pre>{JSON.stringify(weather, null, 2)}</pre> : <p>Loading weather data...</p>}
     </div>
   );
 }
