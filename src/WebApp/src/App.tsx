@@ -1,5 +1,6 @@
 // src/WebApp/src/App.tsx
 import { useEffect, useState } from 'react';
+import Register from './Users/Register';
 
 function App() {
   const [data, setData] = useState<any>(null);
@@ -18,7 +19,8 @@ function App() {
       <h1>React .NET 10 WebAPI</h1>
       <p>Targeting: <code>{API_BASE_URL}</code></p>
       {data ? <pre>{JSON.stringify(data, null, 2)}</pre> : <p>Loading data from API...</p>}
-    </div>
+      <div><Register></Register></div>
+    </div>   
   );
 }
 

@@ -62,4 +62,16 @@ public class AuthController : ControllerBase
             userId = user.Id
         });
     }
+
+    [HttpGet("CheckUserName")]
+    public async Task<bool> CheckUserName(string username)
+    {
+        // Make sure to check the Username field, not the Email field
+        var existingUser = await _users
+            .Find(u => u.Username == username)
+            .FirstOrDefaultAsync();
+
+        // Simply return whether the user was found or not
+        return existingUser != null;
+    }
 }
