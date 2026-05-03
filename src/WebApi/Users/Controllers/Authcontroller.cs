@@ -1,7 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.ObjectPool;
 using MongoDB.Driver;
 using WebApi.Dtos;
 using WebApi.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace WebApi.Controllers;
 
@@ -10,9 +16,16 @@ namespace WebApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMongoCollection<User> _users;
+    private readonly  string jwtKey;
+    private readonly  string jwtIssuer;
+    private readonly  string jwtAudience;
 
     public AuthController(IConfiguration configuration)
     {
+        jwtKey= configuration["Jwt:Key"];
+        jwtIssuer= configuration["Jwt:Issuer"];
+        jwtAudience= configuration["Jwt:Audience"];
+
         var connectionString = configuration["MongoDb:ConnectionString"];
         var databaseName = configuration["MongoDb:DatabaseName"];
         var usersCollection = configuration["MongoDb:UsersCollection"];
@@ -74,4 +87,51 @@ public class AuthController : ControllerBase
         // Simply return whether the user was found or not
         return existingUser != null;
     }
+
+    [AllowAnonymous]
+    [HttpPost("Login")]
+    public async Task<IActionResult> Login(UserLogin userLogin)
+    {
+        string token ="";
+
+         var existingUser = await _users
+            .Find(u => u.Username == userLogin.Username)
+            .FirstOrDefaultAsync();
+
+        if (existingUser == null) {
+            return BadRequest("Login Failed");
+        }
+        if (existingUser !=null 
+            && existingUser.PasswordHash == BCrypt.Net.BCrypt.HashPassword(userLogin.Password))
+        {
+            return BadRequest("Login Failed");
+        }
+
+        return Ok(new
+        {
+            token = GenerateToken(userLogin.Username),
+            message ="Login Successfull"
+
+        });
+    }
+
+     // To generate token
+        private string GenerateToken( string username)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier,username),
+            };
+            var token = new JwtSecurityToken(jwtIssuer,
+                jwtAudience,
+                claims,
+                expires: DateTime.Now.AddMinutes(15),
+                signingCredentials: credentials);
+
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+
+        }
 }
