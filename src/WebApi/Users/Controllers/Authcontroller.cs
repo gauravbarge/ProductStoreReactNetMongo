@@ -36,6 +36,7 @@ public class AuthController : ControllerBase
         _users = database.GetCollection<User>(usersCollection);
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
@@ -76,6 +77,7 @@ public class AuthController : ControllerBase
         });
     }
 
+    [AllowAnonymous]
     [HttpGet("CheckUserName")]
     public async Task<bool> CheckUserName(string username)
     {
