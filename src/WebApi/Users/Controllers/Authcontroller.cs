@@ -16,15 +16,15 @@ namespace WebApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMongoCollection<User> _users;
-    private readonly  string jwtKey;
-    private readonly  string jwtIssuer;
-    private readonly  string jwtAudience;
+    private readonly string jwtKey;
+    private readonly string jwtIssuer;
+    private readonly string jwtAudience;
 
     public AuthController(IConfiguration configuration)
     {
-        jwtKey= configuration["Jwt:Key"];
-        jwtIssuer= configuration["Jwt:Issuer"];
-        jwtAudience= configuration["Jwt:Audience"];
+        jwtKey = configuration["Jwt:Key"]!;
+        jwtIssuer = configuration["Jwt:Issuer"]!;
+        jwtAudience = configuration["Jwt:Audience"]!;
 
         var connectionString = configuration["MongoDb:ConnectionString"];
         var databaseName = configuration["MongoDb:DatabaseName"];
@@ -94,17 +94,11 @@ public class AuthController : ControllerBase
     [HttpPost("Login")]
     public async Task<IActionResult> Login(UserLogin userLogin)
     {
-        string token ="";
-
-         var existingUser = await _users
+        var existingUser = await _users
             .Find(u => u.Username == userLogin.Username)
             .FirstOrDefaultAsync();
 
-        if (existingUser == null) {
-            return BadRequest("Login Failed");
-        }
-        if (existingUser !=null 
-            && existingUser.PasswordHash == BCrypt.Net.BCrypt.HashPassword(userLogin.Password))
+        if (existingUser == null || !BCrypt.Net.BCrypt.Verify(userLogin.Password, existingUser.PasswordHash))
         {
             return BadRequest("Login Failed");
         }
@@ -112,8 +106,7 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             token = GenerateToken(userLogin.Username),
-            message ="Login Successfull"
-
+            message = "Login Successful"
         });
     }
 
