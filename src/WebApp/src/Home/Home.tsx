@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Added Link
+
 
 function Home() {
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -34,6 +36,9 @@ const textwrap = {
       <p>Targeting: <code>{API_BASE_URL}</code></p>
       <h2>Weather Forecast</h2>
       {weather ? <pre>{JSON.stringify(weather, null, 2)}</pre> : <p>Loading weather data...</p>}
+      <p>
+        See users<Link to="/DisplayUsers">See users</Link>
+      </p>
     </div>
   );
 }
