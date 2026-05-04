@@ -5,9 +5,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // 2. Define a proper type for your user
 interface User {
-  email:string
-  name: string;
-  // ...other fields
+  id: string;
+  username: string;
+  email: string;
+  createdAt: string;
 }
 
 function DisplayUsers() {
@@ -25,7 +26,7 @@ function DisplayUsers() {
       return;
     }
 
-    fetch(`${API_BASE_URL}/GetUsers`, {
+    fetch(`${API_BASE_URL}/api/user/GetUsers`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -50,7 +51,11 @@ function DisplayUsers() {
 
   return (
     <div>
-      {users.map(user => <div key={user.email}>{user.name}</div>)}
+      {users.map(user => (
+        <div key={user.id}>
+          <strong>{user.username}</strong> — {user.email}
+        </div>
+      ))}
     </div>
   );
 }

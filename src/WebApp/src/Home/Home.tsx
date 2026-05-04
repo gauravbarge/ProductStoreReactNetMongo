@@ -37,7 +37,7 @@ const textwrap = {
       <h2>Weather Forecast</h2>
       {weather ? <pre>{JSON.stringify(weather, null, 2)}</pre> : <p>Loading weather data...</p>}
       <p>
-        See users<Link to="/DisplayUsers">See users</Link>
+        <Link to="/DisplayUsers">See users</Link>
       </p>
     </div>
   );
