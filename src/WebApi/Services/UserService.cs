@@ -12,7 +12,7 @@ public class UserService: WebApi.Interface.IUserService
     {
         var connectionString = configuration["MongoDb:ConnectionString"];
         var databaseName = configuration["MongoDb:DatabaseName"];
-        usersCollection = configuration["MongoDb:UsersCollection"];
+        usersCollection = configuration["MongoDb:UsersCollection"]!;
 
         var client = new MongoClient(connectionString);
         database = client.GetDatabase(databaseName);   
